@@ -488,6 +488,7 @@
     let analysis = null;
     let currentId = null;
     let currentLevel = '';
+    let sourceName = '';
     let wikiImages = [];
     let ocrWorker = null;
     let cardIndex = 0;
@@ -594,6 +595,7 @@
       courseText = '';
       analysis = null;
       currentId = null;
+      sourceName = '';
       wikiImages = [];
       $('result').classList.add('hidden');
       $('analyseBtn').disabled = true;
@@ -604,6 +606,7 @@
       try {
         for (const file of files) {
           const lower = file.name.toLowerCase();
+          sourceName = sourceName ? `${sourceName}, ${file.name}` : file.name;
           if (lower.endsWith('.json')) {
             await importJson(file);
             imported = true;
@@ -622,6 +625,7 @@
 
         setProgress(null);
         if (courseText.trim()) {
+          await saveImportedCourse();
           $('extractDetails').classList.remove('hidden');
           $('extractPreview').value = courseText.slice(0, 25000);
           $('analyseBtn').disabled = courseText.trim().length < 50;
@@ -636,7 +640,7 @@
       }
     }
 
-    $('applyPreviewBtn').onclick = () => {
+    $('applyPreviewBtn').onclick = async () => {
       const edited = $('extractPreview').value.trim();
       if (!edited) return;
       if (courseText.length > 25000) {
@@ -646,12 +650,14 @@
         courseText = edited;
         setStatus('✅ Corrections appliquées.');
       }
+      if (!analysis && currentId) await saveImportedCourse();
     };
 
     $('clearFilesBtn').onclick = () => {
       courseText = '';
       analysis = null;
       currentId = null;
+      sourceName = '';
       wikiImages = [];
       quizState = {};
       $('analyseBtn').disabled = true;
@@ -837,7 +843,6 @@ ${text.slice(0, 180000)}
         const raw = await callAnthropic({ prompt: buildAnalysisPrompt(courseText, $('niveau').value), maxTokens: 20000, json: true });
         analysis = parseJsonAnswer(raw);
         currentLevel = $('niveau').value;
-        currentId = null;
         wikiImages = [];
         quizState = {};
         renderAnalysis();
@@ -1045,6 +1050,7 @@ ${text.slice(0, 180000)}
         id: currentId || makeId(),
         savedAt: new Date().toISOString(),
         level: currentLevel || $('niveau').value,
+        sourceName,
         sourceText: courseText,
         analysis,
         wikiImages,
@@ -1066,6 +1072,22 @@ ${text.slice(0, 180000)}
       }
     }
 
+    async function saveImportedCourse() {
+      const record = {
+        id: currentId || makeId(),
+        savedAt: new Date().toISOString(),
+        level: $('niveau').value,
+        sourceName: sourceName || 'Cours importé',
+        sourceText: courseText,
+        analysis: null,
+        wikiImages: [],
+        quizState: {}
+      };
+      currentId = record.id;
+      await dbPut(record);
+      await refreshLibrary();
+    }
+
     async function autoUpdateSavedCourse() {
       if (!currentId || !analysis) return;
       try {
@@ -1081,8 +1103,8 @@ ${text.slice(0, 180000)}
         const records = (await dbGetAll()).sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
         $('libraryList').innerHTML = records.length ? records.map(record => `
           <article class="saved-item ${record.id === currentId ? 'current' : ''}">
-            <div class="saved-title">${esc(record.analysis?.titre || 'Cours sans titre')}</div>
-            <div class="saved-meta">${new Date(record.savedAt).toLocaleString('fr-FR')} · ${esc(record.level || '')} · ${record.analysis?.qcm?.length || 0} QCM</div>
+            <div class="saved-title">${esc(record.analysis?.titre || record.sourceName || 'Cours importé')}</div>
+            <div class="saved-meta">${new Date(record.savedAt).toLocaleString('fr-FR')} · ${esc(record.level || '')} · ${record.analysis ? `${record.analysis.qcm?.length || 0} QCM` : 'à analyser'}</div>
             <div class="row">
               <button class="btn secondary small" data-open="${esc(record.id)}">Ouvrir</button>
               <button class="btn ghost small" data-json="${esc(record.id)}">JSON</button>
@@ -1103,14 +1125,24 @@ ${text.slice(0, 180000)}
       if (!record) return;
       currentId = record.id;
       currentLevel = record.level || '';
+      sourceName = record.sourceName || '';
       courseText = record.sourceText || '';
       analysis = record.analysis;
       wikiImages = record.wikiImages || [];
       quizState = record.quizState || {};
       if (currentLevel) $('niveau').value = currentLevel;
-      renderAnalysis();
-      $('saveState').textContent = `Chargé depuis la sauvegarde locale du ${new Date(record.savedAt).toLocaleString('fr-FR')}`;
-      setStatus('✅ Cours sauvegardé chargé.');
+      if (analysis) {
+        renderAnalysis();
+        $('saveState').textContent = `Chargé depuis la sauvegarde locale du ${new Date(record.savedAt).toLocaleString('fr-FR')}`;
+        setStatus('✅ Cours sauvegardé chargé.');
+      } else {
+        $('result').classList.add('hidden');
+        $('extractDetails').classList.toggle('hidden', !courseText);
+        $('extractPreview').value = courseText.slice(0, 25000);
+        $('analyseBtn').disabled = courseText.trim().length < 50;
+        $('clearFilesBtn').disabled = !courseText;
+        setStatus('✅ Dernier cours importé chargé. Tu peux lancer l’analyse.');
+      }
       await refreshLibrary();
     }
 
