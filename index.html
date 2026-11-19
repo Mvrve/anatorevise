@@ -287,7 +287,7 @@
       <div class="stack">
         <section class="card">
           <div class="notice">
-            <strong>Version statique GitHub Pages :</strong> les fichiers, cours sauvegardés et résultats restent dans ton navigateur. Ta clé API est conservée uniquement pendant l'onglet courant et n'est jamais enregistrée dans le dépôt GitHub. N'utilise pas cette version sur un ordinateur public.
+            <strong>Version statique GitHub Pages :</strong> les fichiers, cours sauvegardés et résultats restent dans ton navigateur. Ta clé API est conservée sur cet appareil dans le stockage local du navigateur et n'est jamais enregistrée dans le dépôt GitHub. N'utilise pas cette version sur un ordinateur public.
           </div>
 
           <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Déposer ou choisir des fichiers">
@@ -431,7 +431,7 @@
   <div class="modal" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="card modal-box">
       <div class="row between"><h2 id="settingsTitle">Configuration de l'IA</h2><button class="btn ghost small" data-close-modal="settingsModal">✕</button></div>
-      <div class="notice"><strong>Attention :</strong> GitHub Pages est un hébergement statique. L'appel API part donc directement de ton navigateur. La clé reste uniquement en mémoire de session, mais elle peut être inspectée pendant l'utilisation. Pour un site public multi-utilisateur, il faut un backend sécurisé.</div>
+      <div class="notice"><strong>Attention :</strong> GitHub Pages est un hébergement statique. L'appel API part donc directement de ton navigateur. La clé est conservée localement sur cet appareil, mais elle peut être inspectée pendant l'utilisation. Pour un site public multi-utilisateur, il faut un backend sécurisé.</div>
       <div class="field" style="margin-top:14px">
         <label for="provider">Fournisseur IA</label>
         <select id="provider">
@@ -448,9 +448,9 @@
         <label for="model">Identifiant du modèle</label>
         <input id="model" type="text" value="claude-sonnet-5-5" placeholder="claude-sonnet-5-5">
       </div>
-      <p class="muted tiny">La clé reste uniquement en mémoire pendant cette session. Utilise un modèle auquel ton compte a accès.</p>
+      <p class="muted tiny">La clé est conservée sur cet appareil dans ce navigateur. Utilise un modèle auquel ton compte a accès.</p>
       <div class="row" style="margin-top:14px">
-        <button class="btn secondary" id="saveSettingsBtn">Valider pour cette session</button>
+        <button class="btn secondary" id="saveSettingsBtn">Enregistrer la configuration</button>
         <button class="btn danger" id="forgetKeyBtn">Effacer la clé</button>
       </div>
     </div>
@@ -494,6 +494,7 @@
     let quizState = {};
     let apiKeyMemory = '';
     let providerMemory = 'anthropic';
+    const API_KEY_STORAGE_KEY = 'anatorevise_api_key';
 
     // ---------- IndexedDB ----------
     const DB_NAME = 'anatorevise-github';
@@ -538,24 +539,30 @@
     document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', e => { if (e.target === modal) closeModal(modal.id); }));
 
     $('saveSettingsBtn').onclick = () => {
-      apiKeyMemory = $('apiKey').value.trim();
+      const enteredApiKey = $('apiKey').value.trim();
+      if (enteredApiKey) {
+        apiKeyMemory = enteredApiKey;
+        localStorage.setItem(API_KEY_STORAGE_KEY, apiKeyMemory);
+      }
       providerMemory = $('provider').value;
       sessionStorage.setItem('anatorevise_provider', providerMemory);
       sessionStorage.setItem('anatorevise_model', $('model').value.trim());
       $('apiKey').value = '';
       closeModal('settingsModal');
-      setStatus(apiKeyMemory ? '✅ Configuration prête pour cette session.' : '⚠️ Aucune clé API renseignée.');
+      setStatus(apiKeyMemory ? '✅ Configuration enregistrée sur cet appareil.' : '⚠️ Aucune clé API renseignée.');
     };
     $('forgetKeyBtn').onclick = () => {
       apiKeyMemory = '';
+      localStorage.removeItem(API_KEY_STORAGE_KEY);
       $('apiKey').value = '';
-      setStatus('Clé API effacée de la mémoire de session.');
+      setStatus('Clé API effacée de cet appareil.');
     };
     const providerDefaults = {
       anthropic: 'claude-sonnet-5-5',
       openai: 'gpt-4o-mini',
       gemini: 'gemini-2.5-flash'
     };
+    apiKeyMemory = localStorage.getItem(API_KEY_STORAGE_KEY) || '';
     providerMemory = sessionStorage.getItem('anatorevise_provider') || 'anthropic';
     $('provider').value = providerMemory;
     $('model').value = sessionStorage.getItem('anatorevise_model') || providerDefaults[providerMemory];
