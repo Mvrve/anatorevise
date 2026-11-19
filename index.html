@@ -8,10 +8,10 @@
   <title>AnatoRévise — Révisions d'anatomie</title>
 
   <!-- Bibliothèques chargées depuis des CDN : aucune installation n'est nécessaire. -->
-  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js" type="b5143b176ad87963029a4f63-text/javascript"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" type="b5143b176ad87963029a4f63-text/javascript"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" type="b5143b176ad87963029a4f63-text/javascript"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js" type="b5143b176ad87963029a4f63-text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js"></script>
 
   <style>
     :root {
@@ -467,7 +467,7 @@
   <div class="lightbox" id="lightbox"><img id="lightboxImage" alt="Illustration agrandie"></div>
   <div id="printArea"></div>
 
-  <script type="b5143b176ad87963029a4f63-module">
+  <script type="module">
     import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs';
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs';
 
@@ -1139,5 +1139,5 @@ ${text.slice(0, 180000)}
       setTimeout(() => openModal('settingsModal'), 450);
     }
   </script>
-<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="b5143b176ad87963029a4f63-|49" defer></script></body>
+</body>
 </html>
